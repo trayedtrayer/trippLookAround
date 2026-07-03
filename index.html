@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тропа — авторские экскурсии</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#22283A;        /* тёмно-синий "путевой дневник" */
+    --paper:#F7F3EA;      /* тёплая бумага */
+    --paper-2:#EFE8D8;
+    --moss:#5C7A5E;       /* мох */
+    --mustard:#CE9B3B;    /* компас/маршрут */
+    --coral:#C1573A;      /* акцент, редко */
+    --line: rgba(34,40,58,0.14);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  a{color:inherit;}
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+    border-radius:10px;
+  }
+  input,select,textarea{
+    font-family:inherit;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:9px 11px;
+    background:#fff;
+    color:var(--ink);
+    font-size:14px;
+  }
+  ::placeholder{color:#9a927e;}
+
+  /* Top bar */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:var(--ink); color:var(--paper);
+    padding:14px 20px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    font-family:'Fraunces',serif; font-size:20px; font-weight:700;
+  }
+  .brand .mark{
+    width:28px;height:28px;border-radius:50%;
+    background:var(--mustard);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--ink); font-size:14px; font-weight:700;
+  }
+  .topnav{display:flex; gap:6px; flex-wrap:wrap;}
+  .topnav button{
+    background:transparent; color:var(--paper);
+    border:1px solid rgba(247,243,234,0.25);
+    padding:8px 14px; font-size:13px; font-weight:500;
+  }
+  .topnav button.active, .topnav button:hover{
+    background:var(--paper); color:var(--ink);
+  }
+
+  .container{max-width:1080px;margin:0 auto;padding:24px 20px 100px;}
+  .page{display:none;}
+  .page.active{display:block;}
+
+  /* Filters */
+  .filters{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px; margin-bottom:26px;
+  }
+  .filters-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:12px; align-items:end;
+  }
+  .field label{display:block; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#78715E; margin-bottom:5px;}
+  .field input, .field select{width:100%;}
+  .checkfield{display:flex; align-items:center; gap:8px; padding-bottom:9px;}
+  .checkfield input{width:auto;}
+  .btn{
+    padding:10px 18px; font-weight:600; font-size:14px; border-radius:10px;
+  }
+  .btn-primary{background:var(--ink); color:var(--paper);}
+  .btn-primary:hover{background:#333B54;}
+  .btn-mustard{background:var(--mustard); color:var(--ink);}
+  .btn-mustard:hover{filter:brightness(1.06);}
+  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--ink);}
+  .btn-ghost:hover{background:var(--paper-2);}
+  .btn-danger{background:#fff; border:1px solid var(--coral); color:var(--coral);}
+
+  .section-title{
+    display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;
+  }
+  .eyebrow{font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--moss); font-weight:600;}
+
+  /* Cards */
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:18px;}
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; display:flex; flex-direction:column; transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .card:hover{transform:translateY(-3px); box-shadow:0 10px 24px rgba(34,40,58,0.10);}
+  .card-photo{
+    height:160px; background:var(--paper-2) center/cover no-repeat;
+    display:flex; align-items:center; justify-content:center; color:#a89f88; font-size:12px;
+    position:relative;
+  }
+  .badge{
+    position:absolute; top:10px; left:10px; background:var(--ink); color:var(--paper);
+    font-size:11px; padding:4px 9px; border-radius:20px; font-weight:600;
+  }
+  .card-body{padding:14px 16px 16px; display:flex; flex-direction:column; gap:8px; flex:1;}
+  .card-body h3{margin:0; font-size:17px;}
+  .card-meta{font-size:12px; color:#78715E; display:flex; gap:10px; flex-wrap:wrap;}
+  .card-desc{font-size:13.5px; color:#4B4536; line-height:1.4; flex:1;}
+  .card-foot{display:flex; align-items:center; justify-content:space-between; margin-top:6px;}
+  .price{font-family:'Fraunces',serif; font-weight:700; font-size:16px;}
+  .price small{font-family:'Inter'; font-weight:400; font-size:11px; color:#78715E;}
+
+  .empty{
+    text-align:center; padding:60px 20px; color:#8a8368;
+    border:1px dashed var(--line); border-radius:var(--radius); background:#fff;
+  }
+
+  /* Detail */
+  .detail-photos{display:flex; gap:10px; overflow-x:auto; margin-bottom:18px;}
+  .detail-photos img{height:220px; border-radius:12px; flex-shrink:0;}
+  .detail-photos .ph-empty{
+    height:220px; width:100%; border-radius:12px; background:var(--paper-2);
+    display:flex; align-items:center; justify-content:center; color:#a89f88;
+  }
+  .detail-grid{display:grid; grid-template-columns:2fr 1fr; gap:24px;}
+  @media(max-width:760px){.detail-grid{grid-template-columns:1fr;}}
+  .info-list{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;}
+  .info-list li{display:flex; justify-content:space-between; font-size:14px; border-bottom:1px dashed var(--line); padding-bottom:8px;}
+  .info-list li span:first-child{color:#78715E;}
+  .side-card{background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:18px; position:sticky; top:80px;}
+
+  /* Forms */
+  .form-card{background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:24px; max-width:720px;}
+  .form-row{margin-bottom:16px;}
+  .form-row label{display:block; font-weight:600; font-size:13px; margin-bottom:6px;}
+  .form-row input, .form-row select, .form-row textarea{width:100%;}
+  .form-two{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .radio-row{display:flex; gap:16px; flex-wrap:wrap;}
+  .radio-opt{display:flex; align-items:center; gap:6px; font-size:14px;}
+  .hint{font-size:12px; color:#8a8368; margin-top:4px;}
+  .photo-thumbs{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  .photo-thumbs img{width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--line);}
+
+  /* FAB */
+  .fab{
+    position:fixed; right:24px; bottom:24px; z-index:60;
+    background:var(--coral); color:#fff; padding:14px 22px; border-radius:30px;
+    font-weight:700; font-size:14px; box-shadow:0 8px 20px rgba(193,87,58,0.35);
+    display:flex; align-items:center; gap:8px;
+  }
+  .fab:hover{filter:brightness(1.05);}
+
+  /* Slots */
+  .slot-list{display:flex; flex-direction:column; gap:8px; margin:14px 0;}
+  .slot-opt{display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; cursor:pointer; font-size:14px;}
+  .slot-opt:has(input:checked){border-color:var(--moss); background:#F2F6EF;}
+
+  /* Booking list / owner panel */
+  .book-item{background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:10px;}
+  .status-pill{font-size:11px; padding:3px 10px; border-radius:20px; font-weight:600; text-transform:uppercase; letter-spacing:.03em;}
+  .status-pending{background:#FBEED0; color:#8A6A16;}
+  .status-approved{background:#E1EDDD; color:#3B5B3D;}
+  .status-rejected{background:#F6DAD4; color:#8A3520;}
+  .status-paid{background:#E4EBF6; color:#2D4A78;}
+
+  /* Mock inbox */
+  .mail{background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:10px;}
+  .mail .subj{font-weight:700; font-size:14px;}
+  .mail .to{font-size:12px; color:#78715E; margin-bottom:6px;}
+  .mail .body{font-size:13.5px; white-space:pre-wrap; line-height:1.5;}
+
+  .breadcrumb{font-size:13px; color:#78715E; margin-bottom:14px; cursor:pointer;}
+  .breadcrumb:hover{color:var(--ink);}
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+    background:var(--ink); color:var(--paper); padding:12px 20px; border-radius:10px;
+    font-size:13.5px; z-index:100; opacity:0; pointer-events:none; transition:opacity .2s ease;
+  }
+  .toast.show{opacity:1;}
+
+  .step-title{margin:0 0 4px;}
+  .step-sub{color:#78715E; font-size:14px; margin-bottom:20px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="mark">Т</span> Тропа</div>
+  <div class="topnav">
+    <button data-nav="home" class="active">Экскурсии</button>
+    <button data-nav="mybookings">Мои брони</button>
+    <button data-nav="mytours">Мои экскурсии</button>
+    <button data-nav="inbox">Почта</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- HOME -->
+  <div class="page active" id="page-home">
+    <div class="filters">
+      <div class="filters-grid">
+        <div class="field"><label>Страна</label><select id="f-country"><option value="">Все страны</option></select></div>
+        <div class="field"><label>Город</label><select id="f-city"><option value="">Все города</option></select></div>
+        <div class="field"><label>Дата с</label><input id="f-date-from" type="date"></div>
+        <div class="field"><label>Дата по</label><input id="f-date-to" type="date"></div>
+        <div class="field"><label>Кол-во человек</label><input id="f-people" type="number" min="1" value="1"></div>
+        <div class="checkfield"><input id="f-children" type="checkbox"><label for="f-children">С детьми</label></div>
+        <div class="field"><button class="btn btn-primary" style="width:100%" onclick="applyFilters()">Поиск</button></div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <div>
+        <div class="eyebrow" id="home-eyebrow">Сейчас вы в городе</div>
+        <h2 id="home-city-title" style="margin:2px 0 0">—</h2>
+      </div>
+      <button class="btn btn-ghost" onclick="changeMyCity()">Изменить город</button>
+    </div>
+
+    <div id="home-grid" class="grid"></div>
+  </div>
+
+  <!-- DETAIL -->
+  <div class="page" id="page-detail">
+    <div class="breadcrumb" onclick="go('home')">← Все экскурсии</div>
+    <div id="detail-content"></div>
+  </div>
+
+  <!-- BOOKING -->
+  <div class="page" id="page-booking">
+    <div class="breadcrumb" id="booking-back">← Назад к экскурсии</div>
+    <div id="booking-content"></div>
+  </div>
+
+  <!-- CREATE -->
+  <div class="page" id="page-create">
+    <h2 class="step-title">Создать экскурсию</h2>
+    <p class="step-sub">Заполните карточку — она сразу появится в общем списке.</p>
+    <div class="form-card">
+      <div class="form-row">
+        <label>Название экскурсии</label>
+        <input id="c-title" placeholder="Мистический Петербург">
+      </div>
+      <div class="form-row">
+        <label>Фотографии</label>
+        <input id="c-photos" type="file" accept="image/*" multiple>
+        <div class="photo-thumbs" id="c-photo-thumbs"></div>
+      </div>
+      <div class="form-row">
+        <label>Краткое описание (для карточки в списке)</label>
+        <textarea id="c-short" rows="2" placeholder="Прогулка по дворам и легендам центра города"></textarea>
+      </div>
+      <div class="form-row">
+        <label>Полное описание</label>
+        <textarea id="c-full" rows="5" placeholder="Подробная программа, точка встречи, что берём с собой..."></textarea>
+      </div>
+      <div class="form-two">
+        <div class="form-row"><label>Страна</label><input id="c-country" placeholder="Россия"></div>
+        <div class="form-row"><label>Город / район</label><input id="c-city" placeholder="Санкт-Петербург"></div>
+      </div>
+      <div class="form-row">
+        <label>Формат экскурсии</label>
+        <div class="radio-row">
+          <label class="radio-opt"><input type="radio" name="c-format" value="group" checked> Групповая</label>
+          <label class="radio-opt"><input type="radio" name="c-format" value="individual"> Индивидуальная</label>
+          <label class="radio-opt"><input type="radio" name="c-format" value="self"> Самостоятельная</label>
+        </div>
+      </div>
+      <div class="form-row" id="c-groupsize-row">
+        <label>Размер группы (макс. человек)</label>
+        <input id="c-groupsize" type="number" min="1" value="10">
+      </div>
+      <div class="form-two">
+        <div class="form-row"><label>Длительность (часы)</label><input id="c-duration" type="number" min="0.5" step="0.5" value="2"></div>
+        <div class="form-row">
+          <label>Способ передвижения</label>
+          <select id="c-transport">
+            <option value="walk">Пешком</option>
+            <option value="bus">Автобусом</option>
+            <option value="car">На автомобилях группы</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="checkfield"><input id="c-children" type="checkbox" checked><label for="c-children">Допускаются дети</label></div>
+      </div>
+      <div class="form-two">
+        <div class="form-row">
+          <label>Тип стоимости</label>
+          <select id="c-pricetype">
+            <option value="perPerson">За одного человека</option>
+            <option value="perGroup">За группу целиком</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Стоимость, ₽</label><input id="c-price" type="number" min="0" value="1500"></div>
+      </div>
+      <div class="form-row">
+        <label>Доступное время (можно добавить несколько слотов)</label>
+        <div class="form-two">
+          <input id="c-slot-date" type="date">
+          <input id="c-slot-time" type="time">
+        </div>
+        <button class="btn btn-ghost" style="margin-top:8px" onclick="addSlotDraft()">+ Добавить время</button>
+        <div id="c-slots-list" style="margin-top:8px"></div>
+        <div class="hint">Для самостоятельных экскурсий слоты можно не добавлять.</div>
+      </div>
+      <div class="form-row">
+        <label>Контакты создателя</label>
+        <div class="form-two">
+          <input id="c-contact-name" placeholder="Имя">
+          <input id="c-contact-phone" placeholder="Телефон">
+        </div>
+        <input id="c-contact-email" placeholder="email для связи и подтверждений" style="width:100%; margin-top:10px">
+      </div>
+      <button class="btn btn-mustard" onclick="submitExcursion()">Опубликовать экскурсию</button>
+    </div>
+  </div>
+
+  <!-- MY BOOKINGS -->
+  <div class="page" id="page-mybookings">
+    <h2 class="step-title">Мои брони</h2>
+    <p class="step-sub">Введите email, которым бронировали, чтобы увидеть статус.</p>
+    <div style="display:flex; gap:8px; margin-bottom:20px; max-width:420px;">
+      <input id="mb-email" placeholder="ваш email" style="flex:1">
+      <button class="btn btn-primary" onclick="renderMyBookings()">Показать</button>
+    </div>
+    <div id="mybookings-list"></div>
+  </div>
+
+  <!-- MY TOURS (owner panel) -->
+  <div class="page" id="page-mytours">
+    <h2 class="step-title">Мои экскурсии</h2>
+    <p class="step-sub">Введите email создателя, чтобы увидеть свои экскурсии и заявки на бронь.</p>
+    <div style="display:flex; gap:8px; margin-bottom:20px; max-width:420px;">
+      <input id="mt-email" placeholder="email создателя" style="flex:1">
+      <button class="btn btn-primary" onclick="renderMyTours()">Показать</button>
+    </div>
+    <div id="mytours-list"></div>
+  </div>
+
+  <!-- INBOX (mock) -->
+  <div class="page" id="page-inbox">
+    <h2 class="step-title">Почта</h2>
+    <p class="step-sub">Здесь появляются все письма, отправленные приложением: подтверждения брони и контакты гида после одобрения заявки.</p>
+    <div id="inbox-list"></div>
+  </div>
+
+</div>
+
+<div class="fab" onclick="go('create')">✎ Создать экскурсию</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- Storage helpers ---------------- */
+const DB_KEY = 'tropa_excursions_v1';
+const MAIL_KEY = 'tropa_mail_v1';
+const PROFILE_KEY = 'tropa_profile_v1';
+
+function loadDB(){ return JSON.parse(localStorage.getItem(DB_KEY) || '[]'); }
+function saveDB(db){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+function loadMail(){ return JSON.parse(localStorage.getItem(MAIL_KEY) || '[]'); }
+function saveMail(m){ localStorage.setItem(MAIL_KEY, JSON.stringify(m)); }
+function loadProfile(){ return JSON.parse(localStorage.getItem(PROFILE_KEY) || '{"city":"Санкт-Петербург","country":"Россия"}'); }
+function saveProfile(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
+
+function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+
+// простая, но надёжная проверка формата email: локальная часть, @, домен с точкой, без пробелов
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+function isValidEmail(email){ return EMAIL_RE.test((email||'').trim()); }
+
+// телефон: разрешаем цифры, пробелы, +, -, () — но внутри обязательно должно быть от 7 до 15 цифр
+const PHONE_RE = /^\+?[\d\s\-()]{7,20}$/;
+function isValidPhone(phone){
+  const p = (phone||'').trim();
+  if(!PHONE_RE.test(p)) return false;
+  const digitsOnly = p.replace(/\D/g,'');
+  return digitsOnly.length>=7 && digitsOnly.length<=15;
+}
+
+async function sendMail(to, subject, body){
+  try{
+    await fetch('http://localhost:3001/api/send-mail', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({to, subject, body})
+    });
+  }catch(e){
+    console.warn('Сервер писем недоступен, письмо сохранено только во вкладке «Почта»', e);
+  }
+  const mail = loadMail();
+  mail.unshift({id:uid(), to, subject, body, ts:new Date().toISOString()});
+  saveMail(mail);
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+/* ---------------- Seed data (only first run) ---------------- */
+function seedIfEmpty(){
+  const db = loadDB();
+  if(db.length) return;
+  const seed = [
+    {
+      id:uid(), title:'Дворы и легенды Петроградки', country:'Россия', city:'Санкт-Петербург',
+      shortDesc:'Прогулка по тихим дворам и местам, о которых не расскажут в путеводителе.',
+      fullDesc:'Пройдём по Петроградской стороне, заглянем во дворы-колодцы, поговорим о доходных домах начала XX века и городских легендах. Встреча у метро Горьковская.',
+      photos:[], format:'group', groupSize:12, duration:2.5, childrenAllowed:true,
+      transport:'walk', priceType:'perPerson', price:1200,
+      contact:{name:'Ирина', phone:'+7 900 111-22-33', email:'irina.guide@example.com'},
+      slots:[{date:futureDate(2),time:'11:00'},{date:futureDate(4),time:'15:00'}],
+      bookings:[]
+    },
+    {
+      id:uid(), title:'Индивидуальный маршрут по крышам', country:'Россия', city:'Санкт-Петербург',
+      shortDesc:'Виды на город с закрытых крыш в компании местного гида.',
+      fullDesc:'Индивидуальная экскурсия на две крыши исторического центра. Инструктаж по технике безопасности, страховка входит в стоимость.',
+      photos:[], format:'individual', groupSize:null, duration:1.5, childrenAllowed:false,
+      transport:'walk', priceType:'perGroup', price:4500,
+      contact:{name:'Максим', phone:'+7 900 222-33-44', email:'maxroofs@example.com'},
+      slots:[{date:futureDate(1),time:'19:00'}],
+      bookings:[]
+    },
+    {
+      id:uid(), title:'Аудио-маршрут «Купеческая Москва»', country:'Россия', city:'Москва',
+      shortDesc:'Самостоятельная прогулка с аудиогидом по Замоскворечью.',
+      fullDesc:'Скачиваете аудиогид, идёте в своём темпе. Маршрут — 3.5 км, с картой и точками интереса.',
+      photos:[], format:'self', groupSize:null, duration:3, childrenAllowed:true,
+      transport:'walk', priceType:'perPerson', price:400,
+      contact:{name:'Анна', phone:'+7 900 333-44-55', email:'anna.audio@example.com'},
+      slots:[],
+      bookings:[]
+    }
+  ];
+  saveDB(seed);
+}
+function futureDate(days){
+  const d = new Date(); d.setDate(d.getDate()+days);
+  return d.toISOString().slice(0,10);
+}
+
+/* ---------------- Navigation ---------------- */
+let currentExcursionId = null;
+let currentBookingDraft = null;
+
+function go(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.topnav button').forEach(b=>b.classList.remove('active'));
+  const navBtn = document.querySelector(`.topnav button[data-nav="${page}"]`);
+  if(navBtn) navBtn.classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(page==='inbox') renderInbox();
+}
+document.querySelectorAll('.topnav button').forEach(b=>{
+  b.addEventListener('click', ()=>go(b.dataset.nav));
+});
+
+/* ---------------- Home / list / filters ---------------- */
+function changeMyCity(){
+  const p = loadProfile();
+  const city = prompt('В каком городе вы сейчас находитесь?', p.city) || p.city;
+  const country = prompt('Страна?', p.country) || p.country;
+  saveProfile({city, country});
+  renderHome();
+}
+
+function formatLabel(f){
+  return {group:'Групповая', individual:'Индивидуальная', self:'Самостоятельная'}[f] || f;
+}
+function priceLabel(ex){
+  return ex.priceType==='perGroup' ? `${ex.price} ₽ <small>за группу</small>` : `${ex.price} ₽ <small>за человека</small>`;
+}
+
+function renderHome(){
+  const profile = loadProfile();
+  document.getElementById('home-city-title').textContent = `${profile.city}, ${profile.country}`;
+  populateFilterOptions();
+  // сбрасываем выбор в фильтре на "весь список", чтобы он не спорил с городом пользователя
+  document.getElementById('f-country').value = '';
+  document.getElementById('f-city').value = '';
+  const db = loadDB();
+  const list = db.filter(ex => ex.city.trim().toLowerCase()===profile.city.trim().toLowerCase());
+  document.getElementById('home-eyebrow').textContent = list.length
+    ? `Экскурсии в вашем городе (${list.length})`
+    : `В городе «${profile.city}» пока нет экскурсий`;
+  renderGrid(list, 'home-grid');
+}
+
+// заполняет выпадающие списки стран/городов уникальными значениями из опубликованных экскурсий
+function populateFilterOptions(){
+  const db = loadDB();
+  const countries = [...new Set(db.map(ex=>ex.country.trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
+  const cities = [...new Set(db.map(ex=>ex.city.trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
+  const countrySel = document.getElementById('f-country');
+  const citySel = document.getElementById('f-city');
+  const prevCountry = countrySel.value;
+  const prevCity = citySel.value;
+  countrySel.innerHTML = '<option value="">Все страны</option>' + countries.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  citySel.innerHTML = '<option value="">Все города</option>' + cities.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  if(countries.includes(prevCountry)) countrySel.value = prevCountry;
+  if(cities.includes(prevCity)) citySel.value = prevCity;
+}
+
+// пробуем определить реальный город пользователя через геолокацию браузера (только если профиль ещё не задан вручную)
+function detectUserCity(){
+  if(localStorage.getItem(PROFILE_KEY)) return; // профиль уже есть — не перезаписываем
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    try{
+      const {latitude, longitude} = pos.coords;
+      const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=ru`);
+      const data = await res.json();
+      const city = data.city || data.locality || data.principalSubdivision;
+      const country = data.countryName;
+      if(city && country){
+        saveProfile({city, country});
+        renderHome();
+      }
+    }catch(e){ console.warn('Не удалось определить город по геолокации', e); }
+  }, err=>{ console.warn('Геолокация недоступна или запрещена', err); }, {timeout:8000});
+}
+
+function applyFilters(){
+  const country = document.getElementById('f-country').value.trim().toLowerCase();
+  const city = document.getElementById('f-city').value.trim().toLowerCase();
+  const dateFrom = document.getElementById('f-date-from').value;
+  const dateTo = document.getElementById('f-date-to').value;
+  const people = parseInt(document.getElementById('f-people').value || '1', 10);
+  const withChildren = document.getElementById('f-children').checked;
+
+  let list = loadDB().filter(ex=>{
+    if(country && ex.country.trim().toLowerCase()!==country) return false;
+    if(city && ex.city.trim().toLowerCase()!==city) return false;
+    if(withChildren && !ex.childrenAllowed) return false;
+    if(ex.format==='group' && ex.groupSize && people>ex.groupSize) return false;
+    if(dateFrom || dateTo){
+      if(!ex.slots || !ex.slots.length){
+        if(ex.format!=='self') return false; // фиксированных дат нет и это не самостоятельная — не подходит
+      } else {
+        const ok = ex.slots.some(s=>{
+          if(dateFrom && s.date<dateFrom) return false;
+          if(dateTo && s.date>dateTo) return false;
+          return true;
+        });
+        if(!ok) return false;
+      }
+    }
+    return true;
+  });
+  document.getElementById('home-eyebrow').textContent = `Найдено: ${list.length}`;
+  renderGrid(list, 'home-grid');
+}
+
+function renderGrid(list, containerId){
+  const el = document.getElementById(containerId);
+  if(!list.length){
+    el.innerHTML = `<div class="empty">Ничего не нашлось. Попробуйте изменить параметры поиска — или <a style="color:var(--coral); cursor:pointer" onclick="go('create')">опубликуйте свою экскурсию</a>.</div>`;
+    return;
+  }
+  el.innerHTML = list.map(ex=>`
+    <div class="card" onclick="openDetail('${ex.id}')">
+      <div class="card-photo" style="${ex.photos[0]?`background-image:url('${ex.photos[0]}')`:''}">
+        <span class="badge">${formatLabel(ex.format)}</span>
+        ${ex.photos[0]?'':'нет фото'}
+      </div>
+      <div class="card-body">
+        <h3>${escapeHtml(ex.title)}</h3>
+        <div class="card-meta">
+          <span>📍 ${escapeHtml(ex.city)}</span>
+          <span>⏱ ${ex.duration} ч</span>
+        </div>
+        <div class="card-desc">${escapeHtml(ex.shortDesc)}</div>
+        <div class="card-foot">
+          <div class="price">${priceLabel(ex)}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------------- Detail ---------------- */
+function openDetail(id){
+  currentExcursionId = id;
+  const ex = loadDB().find(e=>e.id===id);
+  if(!ex) return;
+  const photosHtml = ex.photos.length
+    ? `<div class="detail-photos">${ex.photos.map(p=>`<img src="${p}">`).join('')}</div>`
+    : `<div class="ph-empty">Фотографии не загружены</div>`;
+  document.getElementById('detail-content').innerHTML = `
+    ${photosHtml}
+    <div class="detail-grid">
+      <div>
+        <div class="eyebrow">${formatLabel(ex.format)} · ${escapeHtml(ex.city)}, ${escapeHtml(ex.country)}</div>
+        <h1 style="margin:6px 0 14px">${escapeHtml(ex.title)}</h1>
+        <p style="line-height:1.6; font-size:15px">${escapeHtml(ex.fullDesc || ex.shortDesc)}</p>
+        <ul class="info-list" style="margin-top:20px">
+          <li><span>Длительность</span><span>${ex.duration} ч</span></li>
+          <li><span>Формат</span><span>${formatLabel(ex.format)}</span></li>
+          ${ex.format==='group' ? `<li><span>Размер группы</span><span>до ${ex.groupSize} чел.</span></li>` : ''}
+          <li><span>Дети</span><span>${ex.childrenAllowed ? 'допускаются' : 'не допускаются'}</span></li>
+          <li><span>Передвижение</span><span>${({walk:'пешком',bus:'автобусом',car:'на автомобилях группы'})[ex.transport]}</span></li>
+        </ul>
+      </div>
+      <div class="side-card">
+        <div class="price" style="font-size:22px; margin-bottom:4px">${priceLabel(ex)}</div>
+        <div class="hint" style="margin-bottom:16px">Оплата — на следующем шаге</div>
+        <button class="btn btn-mustard" style="width:100%" onclick="startBooking('${ex.id}')">Забронировать</button>
+      </div>
+    </div>
+  `;
+  go('detail');
+}
+
+/* ---------------- Booking flow ---------------- */
+function startBooking(id){
+  const ex = loadDB().find(e=>e.id===id);
+  if(!ex) return;
+  currentBookingDraft = {excursionId:id, slotIndex: ex.slots.length ? null : -1, people:1, children:false, paymentType:null, email:''};
+  document.getElementById('booking-back').onclick = ()=>openDetail(id);
+  renderBookingStep1(ex);
+  go('booking');
+}
+
+function renderBookingStep1(ex){
+  const slotsHtml = ex.slots.length ? `
+    <div class="slot-list">
+      ${ex.slots.map((s,i)=>`
+        <label class="slot-opt">
+          <input type="radio" name="slot" value="${i}" onchange="currentBookingDraft.slotIndex=${i}">
+          ${formatDate(s.date)} в ${s.time}
+        </label>
+      `).join('')}
+    </div>
+  ` : `<p class="hint">Экскурсия самостоятельная — фиксированного времени нет, можно пройти в удобный день.</p>`;
+
+  document.getElementById('booking-content').innerHTML = `
+    <div class="form-card">
+      <h2 class="step-title">Бронирование: ${escapeHtml(ex.title)}</h2>
+      <p class="step-sub">Шаг 1 из 3 — выбор времени и количества человек</p>
+      ${slotsHtml}
+      <div class="form-two" style="margin-top:14px">
+        <div class="form-row">
+          <label>Количество человек</label>
+          <input id="bk-people" type="number" min="1" value="1" ${ex.format==='group' && ex.groupSize ? `max="${ex.groupSize}"` : ''}>
+        </div>
+        <div class="form-row">
+          <div class="checkfield" style="padding-top:24px">
+            <input id="bk-children" type="checkbox" ${!ex.childrenAllowed?'disabled':''}>
+            <label for="bk-children">Едут дети</label>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="bookingStep2()">Далее — оплата</button>
+    </div>
+  `;
+}
+
+function bookingStep2(){
+  const ex = loadDB().find(e=>e.id===currentBookingDraft.excursionId);
+  const people = parseInt(document.getElementById('bk-people').value || '1', 10);
+  if(ex.slots.length && currentBookingDraft.slotIndex===null){
+    toast('Выберите время экскурсии'); return;
+  }
+  if(ex.format==='group' && ex.groupSize && people>ex.groupSize){
+    toast('Столько человек группа не вмещает'); return;
+  }
+  currentBookingDraft.people = people;
+  currentBookingDraft.children = document.getElementById('bk-children').checked;
+  const total = ex.priceType==='perGroup' ? ex.price : ex.price*people;
+
+  document.getElementById('booking-content').innerHTML = `
+    <div class="form-card">
+      <h2 class="step-title">Оплата</h2>
+      <p class="step-sub">Шаг 2 из 3 — способ оплаты · Итого: <b>${total} ₽</b></p>
+      <div class="form-row">
+        <label>Email для подтверждения брони</label>
+        <input id="bk-email" placeholder="you@example.com">
+      </div>
+      <div class="form-row">
+        <label>Способ оплаты</label>
+        <div class="radio-row">
+          <label class="radio-opt"><input type="radio" name="pay" value="online"> Онлайн-эквайринг</label>
+          <label class="radio-opt"><input type="radio" name="pay" value="onsite"> Оплата на месте</label>
+        </div>
+      </div>
+      <div id="pay-stub" style="display:none; margin:14px 0">
+        <div class="hint">Заглушка платёжного шлюза — в реальном продукте здесь виджет эквайринга.</div>
+        <button class="btn btn-ghost" style="margin-top:8px" onclick="fakePay()">💳 Оплатить (демо)</button>
+      </div>
+      <button class="btn btn-primary" id="bk-confirm-onsite" style="display:none" onclick="finishBooking('onsite')">Подтвердить бронь (оплата на месте)</button>
+    </div>
+  `;
+  document.querySelectorAll('input[name=pay]').forEach(r=>{
+    r.addEventListener('change', e=>{
+      document.getElementById('pay-stub').style.display = e.target.value==='online' ? 'block':'none';
+      document.getElementById('bk-confirm-onsite').style.display = e.target.value==='onsite' ? 'block':'none';
+    });
+  });
+}
+
+function fakePay(){
+  finishBooking('online');
+}
+
+function finishBooking(paymentType){
+  const email = document.getElementById('bk-email').value.trim();
+  if(!isValidEmail(email)){ toast('Укажите корректный email, например: you@example.com'); return; }
+  const db = loadDB();
+  const ex = db.find(e=>e.id===currentBookingDraft.excursionId);
+  const booking = {
+    id: uid(),
+    slotIndex: currentBookingDraft.slotIndex,
+    people: currentBookingDraft.people,
+    children: currentBookingDraft.children,
+    paymentType,
+    email,
+    status: paymentType==='online' ? 'paid' : 'pending_onsite',
+    createdAt: new Date().toISOString()
+  };
+  ex.bookings.push(booking);
+  saveDB(db);
+
+  const whenText = ex.slots.length && booking.slotIndex>-1
+    ? `${formatDate(ex.slots[booking.slotIndex].date)} в ${ex.slots[booking.slotIndex].time}`
+    : 'в удобное вам время (самостоятельная экскурсия)';
+
+  sendMail(email, `Бронь подтверждена: ${ex.title}`,
+`Здравствуйте!
+
+Ваша бронь на экскурсию «${ex.title}» принята.
+Дата и время: ${whenText}
+Количество человек: ${booking.people}${booking.children?' (с детьми)':''}
+Оплата: ${paymentType==='online' ? 'проведена онлайн' : 'на месте, при встрече с гидом'}
+
+Как только организатор подтвердит бронь, на этот адрес придут его контакты.
+Спасибо, что выбрали Тропу!`);
+
+  document.getElementById('booking-content').innerHTML = `
+    <div class="form-card">
+      <h2 class="step-title">Готово 🎉</h2>
+      <p class="step-sub">Шаг 3 из 3 — подтверждение</p>
+      <p>Письмо с подтверждением брони отправлено на <b>${escapeHtml(email)}</b>.</p>
+      <p class="hint">Как только создатель экскурсии одобрит заявку, на этот же адрес придут его контакты. Проверить письма можно во вкладке «Почта».</p>
+      <button class="btn btn-primary" onclick="go('inbox')">Открыть почту</button>
+    </div>
+  `;
+}
+
+function formatDate(iso){
+  const d = new Date(iso+'T00:00:00');
+  return d.toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
+}
+
+/* ---------------- Create excursion ---------------- */
+let slotDrafts = [];
+let photoDrafts = [];
+
+document.querySelectorAll('input[name=c-format]').forEach(r=>{
+  r.addEventListener('change', e=>{
+    document.getElementById('c-groupsize-row').style.display = e.target.value==='group' ? 'block':'none';
+  });
+});
+
+document.getElementById('c-photos').addEventListener('change', function(e){
+  const files = Array.from(e.target.files).slice(0,6);
+  let remaining = files.length;
+  if(!remaining) return;
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      photoDrafts.push(ev.target.result);
+      renderPhotoThumbs();
+    };
+    reader.readAsDataURL(file);
+  });
+});
+function renderPhotoThumbs(){
+  document.getElementById('c-photo-thumbs').innerHTML = photoDrafts.map(p=>`<img src="${p}">`).join('');
+}
+
+function addSlotDraft(){
+  const date = document.getElementById('c-slot-date').value;
+  const time = document.getElementById('c-slot-time').value;
+  if(!date || !time){ toast('Укажите дату и время'); return; }
+  slotDrafts.push({date, time});
+  renderSlotDrafts();
+}
+function renderSlotDrafts(){
+  document.getElementById('c-slots-list').innerHTML = slotDrafts.map((s,i)=>`
+    <div style="display:flex; align-items:center; gap:8px; font-size:13.5px; margin-bottom:4px">
+      <span>${formatDate(s.date)}, ${s.time}</span>
+      <button class="btn btn-ghost" style="padding:2px 8px; font-size:12px" onclick="removeSlotDraft(${i})">убрать</button>
+    </div>
+  `).join('');
+}
+function removeSlotDraft(i){ slotDrafts.splice(i,1); renderSlotDrafts(); }
+
+function submitExcursion(){
+  const title = document.getElementById('c-title').value.trim();
+  const shortDesc = document.getElementById('c-short').value.trim();
+  const fullDesc = document.getElementById('c-full').value.trim();
+  const country = document.getElementById('c-country').value.trim();
+  const city = document.getElementById('c-city').value.trim();
+  const format = document.querySelector('input[name=c-format]:checked').value;
+  const groupSize = format==='group' ? parseInt(document.getElementById('c-groupsize').value||'1',10) : null;
+  const duration = parseFloat(document.getElementById('c-duration').value||'1');
+  const transport = document.getElementById('c-transport').value;
+  const childrenAllowed = document.getElementById('c-children').checked;
+  const priceType = document.getElementById('c-pricetype').value;
+  const price = parseFloat(document.getElementById('c-price').value||'0');
+  const contactName = document.getElementById('c-contact-name').value.trim();
+  const contactPhone = document.getElementById('c-contact-phone').value.trim();
+  const contactEmail = document.getElementById('c-contact-email').value.trim();
+
+  if(!title || !shortDesc || !city || !country || !contactEmail){
+    toast('Заполните название, описание, город, страну и email для связи');
+    return;
+  }
+  if(!isValidEmail(contactEmail)){
+    toast('Email для связи указан некорректно, например: you@example.com');
+    return;
+  }
+  if(!contactPhone || !isValidPhone(contactPhone)){
+    toast('Телефон указан некорректно — используйте только цифры (можно + и пробелы), от 7 до 15 цифр');
+    return;
+  }
+
+  const db = loadDB();
+  db.unshift({
+    id: uid(), title, country, city, shortDesc, fullDesc,
+    photos: photoDrafts.slice(),
+    format, groupSize, duration, childrenAllowed, transport,
+    priceType, price,
+    contact: {name:contactName, phone:contactPhone, email:contactEmail},
+    slots: slotDrafts.slice(),
+    bookings: []
+  });
+  saveDB(db);
+
+  sendMail(contactEmail, `Экскурсия «${title}» опубликована`,
+`Здравствуйте, ${contactName || 'коллега'}!
+
+Ваша экскурсия «${title}» опубликована и уже видна в поиске.
+Заявки на бронь будут появляться во вкладке «Мои экскурсии» — введите там этот email (${contactEmail}).`);
+
+  // reset form
+  photoDrafts = []; slotDrafts = [];
+  renderPhotoThumbs(); renderSlotDrafts();
+  document.querySelectorAll('.form-card input, .form-card textarea').forEach(el=>{
+    if(el.type!=='radio' && el.type!=='checkbox' && el.type!=='file') el.value='';
+  });
+  toast('Экскурсия опубликована!');
+  renderHome();
+  go('home');
+}
+
+/* ---------------- My bookings (traveller) ---------------- */
+function renderMyBookings(){
+  const email = document.getElementById('mb-email').value.trim().toLowerCase();
+  const db = loadDB();
+  let items = [];
+  db.forEach(ex=>{
+    ex.bookings.forEach(b=>{
+      if(b.email.toLowerCase()===email) items.push({ex, b});
+    });
+  });
+  const el = document.getElementById('mybookings-list');
+  if(!email){ el.innerHTML=''; return; }
+  if(!items.length){ el.innerHTML = `<div class="empty">Броней с этим email не найдено.</div>`; return; }
+  el.innerHTML = items.map(({ex,b})=>`
+    <div class="book-item">
+      <div style="display:flex; justify-content:space-between; align-items:center">
+        <b>${escapeHtml(ex.title)}</b>
+        <span class="status-pill ${statusClass(b.status)}">${statusText(b.status)}</span>
+      </div>
+      <div class="hint">${ex.slots.length && b.slotIndex>-1 ? formatDate(ex.slots[b.slotIndex].date)+', '+ex.slots[b.slotIndex].time : 'самостоятельное посещение'} · ${b.people} чел.${b.children?' · с детьми':''}</div>
+    </div>
+  `).join('');
+}
+function statusClass(s){
+  return {pending_onsite:'status-pending', paid:'status-paid', approved:'status-approved', rejected:'status-rejected'}[s] || 'status-pending';
+}
+function statusText(s){
+  return {pending_onsite:'Ждёт подтверждения', paid:'Оплачено, ждёт подтверждения', approved:'Подтверждено гидом', rejected:'Отклонено'}[s] || s;
+}
+
+/* ---------------- My tours (creator/owner panel) ---------------- */
+function renderMyTours(){
+  const email = document.getElementById('mt-email').value.trim().toLowerCase();
+  const db = loadDB();
+  const mine = db.filter(ex=>ex.contact.email.toLowerCase()===email);
+  const el = document.getElementById('mytours-list');
+  if(!email){ el.innerHTML=''; return; }
+  if(!mine.length){ el.innerHTML = `<div class="empty">Экскурсий с этим email не найдено.</div>`; return; }
+  el.innerHTML = mine.map(ex=>`
+    <div class="book-item">
+      <b>${escapeHtml(ex.title)}</b> <span class="hint">· ${ex.bookings.length} заявок</span>
+      ${ex.bookings.length ? ex.bookings.map(b=>`
+        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed var(--line); margin-top:10px; padding-top:10px">
+          <div>
+            <div style="font-size:13.5px">${b.email} · ${b.people} чел.${b.children?' · с детьми':''}</div>
+            <div class="hint">${ex.slots.length && b.slotIndex>-1 ? formatDate(ex.slots[b.slotIndex].date)+', '+ex.slots[b.slotIndex].time : 'самостоятельное посещение'}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px">
+            <span class="status-pill ${statusClass(b.status)}">${statusText(b.status)}</span>
+            ${b.status!=='approved' && b.status!=='rejected' ? `
+              <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="ownerDecide('${ex.id}','${b.id}','approved')">Одобрить</button>
+              <button class="btn btn-danger" style="padding:5px 10px;font-size:12px" onclick="ownerDecide('${ex.id}','${b.id}','rejected')">Отклонить</button>
+            ` : ''}
+          </div>
+        </div>
+      `).join('') : `<div class="hint" style="margin-top:8px">Заявок пока нет.</div>`}
+    </div>
+  `).join('');
+}
+
+function ownerDecide(exId, bookingId, decision){
+  const db = loadDB();
+  const ex = db.find(e=>e.id===exId);
+  const booking = ex.bookings.find(b=>b.id===bookingId);
+  booking.status = decision;
+  saveDB(db);
+  if(decision==='approved'){
+    sendMail(booking.email, `Организатор подтвердил бронь: ${ex.title}`,
+`Хорошие новости! Организатор подтвердил вашу бронь на экскурсию «${ex.title}».
+
+Контакты гида:
+Имя: ${ex.contact.name || '—'}
+Телефон: ${ex.contact.phone || '—'}
+Email: ${ex.contact.email}
+
+До встречи на экскурсии!`);
+  } else {
+    sendMail(booking.email, `Бронь отклонена: ${ex.title}`,
+`К сожалению, организатор не смог подтвердить вашу бронь на экскурсию «${ex.title}». Попробуйте выбрать другое время или другую экскурсию.`);
+  }
+  toast(decision==='approved' ? 'Бронь одобрена, письмо отправлено' : 'Бронь отклонена, письмо отправлено');
+  renderMyTours();
+}
+
+/* ---------------- Inbox ---------------- */
+function renderInbox(){
+  const mail = loadMail();
+  const el = document.getElementById('inbox-list');
+  if(!mail.length){ el.innerHTML = `<div class="empty">Писем пока нет.</div>`; return; }
+  el.innerHTML = mail.map(m=>`
+    <div class="mail">
+      <div class="subj">${escapeHtml(m.subject)}</div>
+      <div class="to">кому: ${escapeHtml(m.to)} · ${new Date(m.ts).toLocaleString('ru-RU')}</div>
+      <div class="body">${escapeHtml(m.body)}</div>
+    </div>
+  `).join('');
+}
+
+/* ---------------- Init ---------------- */
+seedIfEmpty();
+renderHome();
+detectUserCity();
+</script>
+</body>
+</html>
