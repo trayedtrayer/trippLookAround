@@ -655,15 +655,28 @@ function startBooking(id){
   go('booking');
 }
 
+// сколько человек уже забронировано на конкретный слот (учитываются все брони, кроме отклонённых)
+function getSlotOccupancy(ex, slotIndex){
+  return ex.bookings
+    .filter(b => b.slotIndex===slotIndex && b.status!=='rejected')
+    .reduce((sum,b)=>sum+b.people, 0);
+}
+
 function renderBookingStep1(ex){
+  const hasCapacity = ex.format==='group' && ex.groupSize;
   const slotsHtml = ex.slots.length ? `
     <div class="slot-list">
-      ${ex.slots.map((s,i)=>`
-        <label class="slot-opt">
-          <input type="radio" name="slot" value="${i}" onchange="currentBookingDraft.slotIndex=${i}">
-          ${formatDate(s.date)} в ${s.time}
+      ${ex.slots.map((s,i)=>{
+        const occupied = getSlotOccupancy(ex, i);
+        const remaining = hasCapacity ? ex.groupSize - occupied : null;
+        const full = hasCapacity && remaining<=0;
+        const capacityText = hasCapacity ? (full ? ' — мест нет' : ` — осталось ${remaining} из ${ex.groupSize}`) : '';
+        return `
+        <label class="slot-opt" style="${full ? 'opacity:.5; cursor:not-allowed;' : ''}">
+          <input type="radio" name="slot" value="${i}" onchange="currentBookingDraft.slotIndex=${i}" ${full?'disabled':''}>
+          ${formatDate(s.date)} в ${s.time}${capacityText}
         </label>
-      `).join('')}
+      `;}).join('')}
     </div>
   ` : `<p class="hint">Экскурсия самостоятельная — фиксированного времени нет, можно пройти в удобный день.</p>`;
 
@@ -675,7 +688,7 @@ function renderBookingStep1(ex){
       <div class="form-two" style="margin-top:14px">
         <div class="form-row">
           <label>Количество человек</label>
-          <input id="bk-people" type="number" min="1" value="1" ${ex.format==='group' && ex.groupSize ? `max="${ex.groupSize}"` : ''}>
+          <input id="bk-people" type="number" min="1" value="1" ${hasCapacity ? `max="${ex.groupSize}"` : ''}>
         </div>
         <div class="form-row">
           <div class="checkfield" style="padding-top:24px">
@@ -695,8 +708,20 @@ function bookingStep2(){
   if(ex.slots.length && currentBookingDraft.slotIndex===null){
     toast('Выберите время экскурсии'); return;
   }
-  if(ex.format==='group' && ex.groupSize && people>ex.groupSize){
-    toast('Столько человек группа не вмещает'); return;
+  if(ex.format==='group' && ex.groupSize){
+    if(people>ex.groupSize){
+      toast('Столько человек группа не вмещает'); return;
+    }
+    // проверяем занятость именно выбранного слота с учётом уже принятых броней
+    const slotIndex = currentBookingDraft.slotIndex;
+    if(slotIndex!==null && slotIndex>-1){
+      const occupied = getSlotOccupancy(ex, slotIndex);
+      const remaining = ex.groupSize - occupied;
+      if(people>remaining){
+        toast(remaining>0 ? `На это время осталось всего ${remaining} мест` : 'На это время мест уже нет, выберите другое время');
+        return;
+      }
+    }
   }
   currentBookingDraft.people = people;
   currentBookingDraft.children = document.getElementById('bk-children').checked;
